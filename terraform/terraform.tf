@@ -9,5 +9,6 @@ terraform {
     storage_account_name = "stmatlautfstate001"
     container_name       = "tfstate"
     key                  = "github.terraform.tfstate"
+    use_oidc             = true
   }
 }

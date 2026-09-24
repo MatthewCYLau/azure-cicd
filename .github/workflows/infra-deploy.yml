@@ -1,4 +1,4 @@
-name: "Terraform Plan and Apply"
+name: "Terraform Plan & Apply"
 
 on:
   push:
@@ -9,17 +9,21 @@ on:
   workflow_dispatch:
 
 permissions:
-  id-token: write
-  contents: read
+  id-token: write # Required for Azure OIDC authentication
+  contents: read # Required to check out repository code
 
 jobs:
   plan:
     name: "Terraform Plan"
     runs-on: ubuntu-latest
-    environment: sandbox
     defaults:
       run:
         working-directory: terraform
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_USE_OIDC: true
 
     steps:
       - name: Checkout Code
@@ -60,6 +64,12 @@ jobs:
     defaults:
       run:
         working-directory: terraform
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_USE_OIDC: true
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4

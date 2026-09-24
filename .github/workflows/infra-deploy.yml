@@ -15,6 +15,7 @@ permissions:
 jobs:
   plan:
     name: "Terraform Plan"
+    environment: sandbox
     runs-on: ubuntu-latest
     defaults:
       run:

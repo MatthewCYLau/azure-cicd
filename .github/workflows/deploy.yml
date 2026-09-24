@@ -1,0 +1,141 @@
+name: CI/CD - Azure Container Apps
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: "Release Version Tag (e.g., v1.0.0)"
+        required: true
+        default: "v1.0.0"
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  REGISTRY: myregistry.azurecr.io
+  IMAGE_NAME: python-app
+
+jobs:
+  # -----------------------------------------------------------------
+  # 1. SANDBOX: Automatic build & deploy on push to master
+  # -----------------------------------------------------------------
+  build-and-deploy-sandbox:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: sandbox
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # OIDC LOGIN
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # - name: Log in to Azure Container Registry (ACR)
+      #   uses: azure/docker-login@v2
+      #   with:
+      #     login-server: ${{ env.REGISTRY }}
+      #     username: ${{ secrets.ACR_USERNAME }}
+      #     password: ${{ secrets.ACR_PASSWORD }}
+
+      # - name: Extract Short SHA
+      #   id: vars
+      #   run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      # - name: Build & Push Sandbox Image
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     context: .
+      #     push: true
+      #     tags: |
+      #       ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sandbox-${{ steps.vars.outputs.sha }}
+      #       ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sandbox-latest
+
+      # - name: Deploy to Azure Container App (Sandbox)
+      #   uses: azure/container-apps-deploy-action@v1
+      #   with:
+      #     acrName: myregistry
+      #     containerAppName: python-app-sandbox
+      #     resourceGroup: rg-sandbox
+      #     imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sandbox-${{ steps.vars.outputs.sha }}
+
+  # # -----------------------------------------------------------------
+  # # 2. STAGING: Triggered via workflow_dispatch
+  # # -----------------------------------------------------------------
+  # build-and-deploy-staging:
+  #   if: github.event_name == 'workflow_dispatch'
+  #   runs-on: ubuntu-latest
+  #   environment: staging
+  #   outputs:
+  #     release_tag: ${{ steps.prep.outputs.release_tag }}
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
+
+  #     # OIDC LOGIN
+  #     - name: Azure Login (OIDC)
+  #       uses: azure/login@v2
+  #       with:
+  #         client-id: ${{ secrets.AZURE_CLIENT_ID }}
+  #         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+  #         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+  #     - name: Log in to ACR
+  #       uses: azure/docker-login@v2
+  #       with:
+  #         login-server: ${{ env.REGISTRY }}
+  #         username: ${{ secrets.ACR_USERNAME }}
+  #         password: ${{ secrets.ACR_PASSWORD }}
+
+  #     - name: Prepare Tag
+  #       id: prep
+  #       run: echo "release_tag=${{ inputs.release_version }}" >> $GITHUB_OUTPUT
+
+  #     - name: Build & Push Release Image
+  #       uses: docker/build-push-action@v5
+  #       with:
+  #         context: .
+  #         push: true
+  #         tags: |
+  #           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.prep.outputs.release_tag }}
+  #           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+  #     - name: Deploy to Azure Container App (Staging)
+  #       uses: azure/container-apps-deploy-action@v1
+  #       with:
+  #         acrName: myregistry
+  #         containerAppName: python-app-staging
+  #         resourceGroup: rg-staging
+  #         imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.prep.outputs.release_tag }}
+
+  # # -----------------------------------------------------------------
+  # # 3. PRODUCTION: Pauses for Manual Approval via GitHub Environment
+  # # -----------------------------------------------------------------
+  # deploy-production:
+  #   needs: build-and-deploy-staging
+  #   runs-on: ubuntu-latest
+  #   environment: production
+  #   steps:
+  #     # OIDC LOGIN
+  #     - name: Azure Login (OIDC)
+  #       uses: azure/login@v2
+  #       with:
+  #         client-id: ${{ secrets.AZURE_CLIENT_ID }}
+  #         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+  #         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+  #     - name: Deploy Release Image to Production
+  #       uses: azure/container-apps-deploy-action@v1
+  #       with:
+  #         acrName: myregistry
+  #         containerAppName: python-app-prod
+  #         resourceGroup: rg-prod
+  #         imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-deploy-staging.outputs.release_tag }}

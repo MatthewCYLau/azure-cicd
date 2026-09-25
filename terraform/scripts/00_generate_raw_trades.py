@@ -4,8 +4,17 @@ import random
 from datetime import date, timedelta
 from pyspark.sql import SparkSession
 
-STORAGE_ACCOUNT = "st<PROJECT_CODE>data"
+# Databricks notebook source
+# Retrieve the storage_account parameter passed from the Databricks Job
+dbutils.widgets.text("storage_account", "")
+STORAGE_ACCOUNT = dbutils.widgets.get("storage_account")
+
+# Ensure account name is valid lowercase string before forming URI
+STORAGE_ACCOUNT = STORAGE_ACCOUNT.strip().lower()
+
 BRONZE_PATH = f"abfss://bronze-raw@{STORAGE_ACCOUNT}.dfs.core.windows.net/trades/"
+
+print(f"Targeting path: {BRONZE_PATH}")
 
 # 1. Generate realistic synthetic trade data
 currencies = ["USD", "EUR", "GBP", "JPY"]
@@ -36,7 +45,7 @@ for i in range(1, 501):  # Generate 500 mock trades
     data.append(trade)
 
 # 2. Convert to PySpark DataFrame and write to ADLS Bronze as JSON
-df = spark.read.json(sc.parallelize([json.dumps(d) for d in data]))
+df = spark.createDataFrame(data)
 
 (df.write.format("json").mode("overwrite").save(BRONZE_PATH))
 

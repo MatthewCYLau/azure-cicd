@@ -149,6 +149,12 @@ resource "databricks_catalog" "risk_catalog" {
   name          = "risk_pnl"
   comment       = "Catalog for Risk & PnL ETL Pipeline"
   force_destroy = true
+
+  storage_root = "${databricks_external_location.gold.url}risk_catalog_root/"
+
+  depends_on = [
+    databricks_external_location.gold
+  ]
 }
 
 resource "databricks_schema" "risk_schema" {

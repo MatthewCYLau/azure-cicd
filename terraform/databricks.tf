@@ -38,22 +38,22 @@ resource "databricks_job" "etl_workflow" {
 
 # Notebook 0: Synthetic Raw Data Generator (Landing into Bronze)
 resource "databricks_notebook" "generate_raw_data" {
-  path     = "/ETL/00_generate_raw_trades"
-  language = "PYTHON"
+  path           = "/ETL/00_generate_raw_trades"
+  language       = "PYTHON"
   content_base64 = base64encode(file("${path.module}/scripts/00_generate_raw_trades.py"))
 }
 
 # Notebook 1: Bronze to Silver (Cleaning & Schema Enforcement)
 resource "databricks_notebook" "bronze_to_silver" {
-  path     = "/ETL/01_bronze_to_silver_risk_pnl"
-  language = "PYTHON"
+  path           = "/ETL/01_bronze_to_silver_risk_pnl"
+  language       = "PYTHON"
   content_base64 = base64encode(file("${path.module}/scripts/01_bronze_to_silver.py"))
 }
 
 # Notebook 2: Silver to Gold (FX Conversion & Risk Aggregations)
 resource "databricks_notebook" "silver_to_gold" {
-  path     = "/ETL/02_silver_to_gold_risk_pnl"
-  language = "PYTHON"
+  path           = "/ETL/02_silver_to_gold_risk_pnl"
+  language       = "PYTHON"
   content_base64 = base64encode(file("${path.module}/scripts/02_silver_to_gold.py"))
 }
 resource "databricks_job" "risk_pnl_pipeline" {
@@ -118,7 +118,8 @@ resource "databricks_storage_credential" "adls_credential" {
     access_connector_id = azurerm_databricks_access_connector.unity.id
   }
 
-  comment = "Storage Credential for ADLS Risk PnL Storage Account"
+  comment    = "Storage Credential for ADLS Risk PnL Storage Account"
+  depends_on = [time_sleep.wait_rbac_propagation]
 }
 
 # 2. External Locations mapping to ADLS Containers
@@ -145,8 +146,8 @@ resource "databricks_external_location" "gold" {
 
 # 3. Create Catalog & Schema for SQL/PySpark Queries
 resource "databricks_catalog" "risk_catalog" {
-  name         = "risk_pnl"
-  comment      = "Catalog for Risk & PnL ETL Pipeline"
+  name          = "risk_pnl"
+  comment       = "Catalog for Risk & PnL ETL Pipeline"
   force_destroy = true
 }
 

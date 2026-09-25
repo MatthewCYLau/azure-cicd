@@ -65,3 +65,13 @@ resource "azurerm_role_assignment" "adls_access" {
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = azurerm_databricks_access_connector.unity.identity[0].principal_id
 }
+
+# Add a propagation delay for Azure RBAC
+resource "time_sleep" "wait_rbac_propagation" {
+  depends_on = [
+    azurerm_role_assignment.access_connector_reader,
+    azurerm_role_assignment.adls_access
+  ]
+
+  create_duration = "60s"
+}

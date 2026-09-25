@@ -1,29 +1,22 @@
-# Retrieve latest LTS Spark runtime and single-node/multi-node instance types
 data "databricks_spark_version" "latest_lts" {
   long_term_support = true
-  depends_on        = [azurerm_databricks_workspace.this]
 }
 
-data "databricks_node_type" "smallest" {
-  local_disk = true
-  depends_on = [azurerm_databricks_workspace.this]
+data "databricks_node_type" "cheapest" {
+  min_cores   = 2
+  gb_per_core = 4
 }
 
 # Single-Node or Multi-Node ETL Compute Cluster
 resource "databricks_cluster" "etl_cluster" {
   cluster_name            = "etl-processing-cluster"
   spark_version           = data.databricks_spark_version.latest_lts.id
-  node_type_id            = "Standard_D4s_v5"
-  driver_node_type_id     = "Standard_D4s_v5"
-  autotermination_minutes = 30 # Terminate to reduce idle cost
-
-  autoscale {
-    min_workers = 1
-    max_workers = 4
-  }
+  node_type_id            = data.databricks_node_type.cheapest.id
+  autotermination_minutes = 20 # Aggressive auto-termination
 
   spark_conf = {
-    "spark.databricks.io.cache.enabled" = "true"
+    "spark.databricks.cluster.profile" = "singleNode"
+    "spark.master"                     = "local[*]"
   }
 }
 
@@ -49,7 +42,7 @@ resource "databricks_job" "etl_workflow" {
     job_cluster_key = "job_cluster"
     new_cluster {
       spark_version = data.databricks_spark_version.latest_lts.id
-      node_type_id  = data.databricks_node_type.smallest.id
+      node_type_id  = data.databricks_node_type.cheapest.id
       num_workers   = 2
     }
   }

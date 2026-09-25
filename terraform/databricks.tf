@@ -39,8 +39,8 @@ resource "databricks_job" "etl_workflow" {
     job_cluster_key = "job_cluster"
     new_cluster {
       spark_version = data.databricks_spark_version.latest_lts.id
-      node_type_id  = data.databricks_node_type.smallest.id
-      num_workers   = 2
+      node_type_id  = "Standard_DS3_v2"
+      num_workers   = 1
     }
   }
 

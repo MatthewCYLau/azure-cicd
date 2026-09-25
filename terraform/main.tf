@@ -26,23 +26,6 @@ resource "azurerm_storage_container" "gold" {
   container_access_type = "private"
 }
 
-resource "azurerm_databricks_access_connector" "unity" {
-  name                = "ac-${var.project_short_code}-databricks"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  identity {
-    type = "SystemAssigned"
-  }
-
-  tags = local.common_tags
-}
-
-resource "azurerm_role_assignment" "adls_access" {
-  scope                = azurerm_storage_account.adls.id
-  role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = azurerm_databricks_access_connector.unity.identity[0].principal_id
-}
-
 resource "azurerm_databricks_workspace" "this" {
   name                = "dbw-${var.project_short_code}-prod"
   resource_group_name = var.resource_group_name
@@ -50,4 +33,35 @@ resource "azurerm_databricks_workspace" "this" {
   sku                 = "premium"
 
   tags = local.common_tags
+}
+
+
+# Get current client context
+data "azurerm_client_config" "current" {}
+
+# 1. Access Connector (Managed Identity)
+resource "azurerm_databricks_access_connector" "unity" {
+  name                = "ac-${var.project_short_code}-databricks"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  tags = local.common_tags
+}
+
+# 2. REQUIRED FOR UNITY CATALOG: Grant 'Reader' on Access Connector to deployment principal
+resource "azurerm_role_assignment" "access_connector_reader" {
+  scope                = azurerm_databricks_access_connector.unity.id
+  role_definition_name = "Reader"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
+# 3. Grant 'Storage Blob Data Contributor' to the Access Connector on ADLS
+resource "azurerm_role_assignment" "adls_access" {
+  scope                = azurerm_storage_account.adls.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_databricks_access_connector.unity.identity[0].principal_id
 }

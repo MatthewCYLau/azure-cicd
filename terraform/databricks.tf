@@ -109,3 +109,49 @@ resource "databricks_job" "risk_pnl_pipeline" {
     timezone_id            = "UTC"
   }
 }
+
+# 1. Unity Catalog Storage Credential using Azure Managed Identity
+resource "databricks_storage_credential" "adls_credential" {
+  name = "st-${var.project_short_code}-access-credential"
+
+  azure_managed_identity {
+    access_connector_id = azurerm_databricks_access_connector.unity.id
+  }
+
+  comment = "Storage Credential for ADLS Risk PnL Storage Account"
+}
+
+# 2. External Locations mapping to ADLS Containers
+resource "databricks_external_location" "bronze" {
+  name            = "bronze_raw_location"
+  url             = "abfss://${azurerm_storage_container.bronze.name}@${azurerm_storage_account.adls.name}.dfs.core.windows.net/"
+  credential_name = databricks_storage_credential.adls_credential.id
+  comment         = "External Location for Bronze Data"
+}
+
+resource "databricks_external_location" "silver" {
+  name            = "silver_cleaned_location"
+  url             = "abfss://${azurerm_storage_container.silver.name}@${azurerm_storage_account.adls.name}.dfs.core.windows.net/"
+  credential_name = databricks_storage_credential.adls_credential.id
+  comment         = "External Location for Silver Data"
+}
+
+resource "databricks_external_location" "gold" {
+  name            = "gold_aggregated_location"
+  url             = "abfss://${azurerm_storage_container.gold.name}@${azurerm_storage_account.adls.name}.dfs.core.windows.net/"
+  credential_name = databricks_storage_credential.adls_credential.id
+  comment         = "External Location for Gold Data"
+}
+
+# 3. Create Catalog & Schema for SQL/PySpark Queries
+resource "databricks_catalog" "risk_catalog" {
+  name         = "risk_pnl"
+  comment      = "Catalog for Risk & PnL ETL Pipeline"
+  force_destroy = true
+}
+
+resource "databricks_schema" "risk_schema" {
+  catalog_name = databricks_catalog.risk_catalog.name
+  name         = "portfolio"
+  comment      = "Schema containing Risk & PnL trades and metrics"
+}

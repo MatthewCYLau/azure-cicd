@@ -2,11 +2,6 @@ name: "Terraform Destroy"
 
 on:
   workflow_dispatch:
-    inputs:
-      confirm_destroy:
-        description: 'Type "destroy" to confirm resource deletion'
-        required: true
-        default: "cancel"
 
 permissions:
   id-token: write # Required for Azure OIDC authentication
@@ -27,13 +22,6 @@ jobs:
       ARM_USE_OIDC: true
 
     steps:
-      - name: Validate Confirmation Input
-        run: |
-          if [ "${{ inputs.confirm_destroy }}" != "destroy" ]; then
-            echo "Confirmation string did not match 'destroy'. Aborting execution."
-            exit 1
-          fi
-
       - name: Checkout Code
         uses: actions/checkout@v4
 

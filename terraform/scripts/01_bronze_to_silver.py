@@ -1,15 +1,12 @@
 # Databricks notebook source
-from pyspark.sql.functions import col, current_timestamp, coalesce, lit, when
-from pyspark.sql.types import (
-    StructType,
-    StructField,
-    StringType,
-    DoubleType,
-    DateType,
-    TimestampType,
-)
+from pyspark.sql.functions import col, current_timestamp
+from pyspark.sql.types import StructType, StructField, StringType, DoubleType, DateType
 
-# Define strict schema for raw trade landings
+spark.sql("USE CATALOG risk_pnl")
+spark.sql("USE SCHEMA portfolio")
+
+BRONZE_VOLUME_PATH = "/Volumes/risk_pnl/portfolio/bronze_volume/trades"
+
 trade_schema = StructType(
     [
         StructField("trade_id", StringType(), False),
@@ -26,30 +23,24 @@ trade_schema = StructType(
     ]
 )
 
-STORAGE_ACCOUNT = "st<PROJECT_CODE>data"
-BRONZE_PATH = f"abfss://bronze-raw@{STORAGE_ACCOUNT}.dfs.core.windows.net/trades/"
-SILVER_PATH = (
-    f"abfss://silver-cleaned@{STORAGE_ACCOUNT}.dfs.core.windows.net/risk_trades/"
-)
-
-# Read raw JSON / Parquet files from Bronze
-raw_df = spark.read.schema(trade_schema).json(BRONZE_PATH)
+# Read raw data using UC Volume path
+raw_df = spark.read.schema(trade_schema).json(BRONZE_VOLUME_PATH)
 
 # Clean and transform
 cleaned_df = (
-    raw_df
-    # Remove records missing critical keys
-    .filter(col("trade_id").isNotNull() & col("book_id").isNotNull())
-    # Fill missing sensitivities with 0.0
+    raw_df.filter(col("trade_id").isNotNull() & col("book_id").isNotNull())
     .fillna({"delta": 0.0, "gamma": 0.0, "vega": 0.0, "unrealized_pnl_ccy": 0.0})
-    # Add ingestion audit timestamp
     .withColumn("ingestion_timestamp", current_timestamp())
 )
 
-# Write to Silver as Delta Lake table partitioned by trade date
+# Write directly to Unity Catalog Silver Table
 (
     cleaned_df.write.format("delta")
     .mode("overwrite")
     .partitionBy("trade_date")
-    .save(SILVER_PATH)
+    .saveAsTable("risk_pnl.portfolio.silver_risk_trades")
+)
+
+print(
+    "Successfully created/updated Unity Catalog Table: risk_pnl.portfolio.silver_risk_trades"
 )

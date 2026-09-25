@@ -3,7 +3,7 @@ data "databricks_spark_version" "latest_lts" {
 }
 
 data "databricks_node_type" "cheapest" {
-  min_cores   = 2
+  min_cores   = 4
   gb_per_core = 4
 }
 

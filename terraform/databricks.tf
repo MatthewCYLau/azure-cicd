@@ -13,7 +13,8 @@ data "databricks_node_type" "smallest" {
 resource "databricks_cluster" "etl_cluster" {
   cluster_name            = "etl-processing-cluster"
   spark_version           = data.databricks_spark_version.latest_lts.id
-  node_type_id            = data.databricks_node_type.smallest.id
+  node_type_id            = "Standard_D4s_v5"
+  driver_node_type_id     = "Standard_D4s_v5"
   autotermination_minutes = 30 # Terminate to reduce idle cost
 
   autoscale {

@@ -52,11 +52,11 @@ resource "azurerm_databricks_access_connector" "unity" {
   tags = local.common_tags
 }
 
-# 2. REQUIRED FOR UNITY CATALOG: Grant 'Reader' on Access Connector to deployment principal
+# 2. REQUIRED FOR UNITY CATALOG: Grant 'Reader' on Access Connector TO ITSELF
 resource "azurerm_role_assignment" "access_connector_reader" {
   scope                = azurerm_databricks_access_connector.unity.id
   role_definition_name = "Reader"
-  principal_id         = data.azurerm_client_config.current.object_id
+  principal_id         = azurerm_databricks_access_connector.unity.identity[0].principal_id
 }
 
 # 3. Grant 'Storage Blob Data Contributor' to the Access Connector on ADLS

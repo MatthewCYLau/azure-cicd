@@ -1,23 +1,3 @@
-# Retrieve latest LTS Spark runtime and single-node/multi-node instance types
-data "databricks_spark_version" "latest_lts" {
-  long_term_support = true
-  depends_on        = [azurerm_databricks_workspace.this]
-}
-
-resource "databricks_cluster" "etl_cluster" {
-  cluster_name            = "etl-processing-cluster"
-  spark_version           = data.databricks_spark_version.latest_lts.id
-  node_type_id            = "Standard_DS3_v2"
-  driver_node_type_id     = "Standard_DS3_v2"
-  autotermination_minutes = 20 # Terminate to reduce idle cost
-
-  autoscale {
-    min_workers = 1
-    max_workers = 1
-  }
-}
-
-# Upload ETL Notebook to Workspace
 resource "databricks_notebook" "etl_script" {
   path     = "/ETL/bronze_to_silver_pipeline"
   language = "PYTHON"
@@ -31,22 +11,19 @@ resource "databricks_notebook" "etl_script" {
   )
 }
 
-# Scheduled Databricks Workflow Job
 resource "databricks_job" "etl_workflow" {
   name = "Daily-ETL-Pipeline"
 
-  job_cluster {
-    job_cluster_key = "job_cluster"
-    new_cluster {
-      spark_version = data.databricks_spark_version.latest_lts.id
-      node_type_id  = "Standard_DS3_v2"
-      num_workers   = 1
+  environment {
+    environment_key = "default"
+    spec {
+      client = "1"
     }
   }
 
   task {
     task_key        = "bronze_to_silver"
-    job_cluster_key = "job_cluster"
+    environment_key = "default" # Directs this task to run on Serverless compute
 
     notebook_task {
       notebook_path = databricks_notebook.etl_script.path

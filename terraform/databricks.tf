@@ -110,6 +110,11 @@ resource "databricks_job" "risk_pnl_pipeline" {
   }
 }
 
+import {
+  to = databricks_storage_credential.adls_credential
+  id = "st-${var.project_short_code}-access-credential"
+}
+
 # 1. Unity Catalog Storage Credential using Azure Managed Identity
 resource "databricks_storage_credential" "adls_credential" {
   name = "st-${var.project_short_code}-access-credential"
@@ -126,21 +131,21 @@ resource "databricks_storage_credential" "adls_credential" {
 resource "databricks_external_location" "bronze" {
   name            = "bronze_raw_location"
   url             = "abfss://${azurerm_storage_container.bronze.name}@${azurerm_storage_account.adls.name}.dfs.core.windows.net/"
-  credential_name = databricks_storage_credential.adls_credential.id
+  credential_name = databricks_storage_credential.adls_credential.name
   comment         = "External Location for Bronze Data"
 }
 
 resource "databricks_external_location" "silver" {
   name            = "silver_cleaned_location"
   url             = "abfss://${azurerm_storage_container.silver.name}@${azurerm_storage_account.adls.name}.dfs.core.windows.net/"
-  credential_name = databricks_storage_credential.adls_credential.id
+  credential_name = databricks_storage_credential.adls_credential.name
   comment         = "External Location for Silver Data"
 }
 
 resource "databricks_external_location" "gold" {
   name            = "gold_aggregated_location"
   url             = "abfss://${azurerm_storage_container.gold.name}@${azurerm_storage_account.adls.name}.dfs.core.windows.net/"
-  credential_name = databricks_storage_credential.adls_credential.id
+  credential_name = databricks_storage_credential.adls_credential.name
   comment         = "External Location for Gold Data"
 }
 

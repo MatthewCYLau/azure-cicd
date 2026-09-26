@@ -35,10 +35,6 @@ resource "azurerm_databricks_workspace" "this" {
   tags = local.common_tags
 }
 
-
-# Get current client context
-data "azurerm_client_config" "current" {}
-
 # 1. Access Connector (Managed Identity)
 resource "azurerm_databricks_access_connector" "unity" {
   name                = "ac-${var.project_short_code}-databricks"

@@ -1,3 +1,4 @@
+/*
 resource "databricks_notebook" "etl_script" {
   path     = "/ETL/bronze_to_silver_pipeline"
   language = "PYTHON"
@@ -167,3 +168,4 @@ resource "databricks_schema" "risk_schema" {
   name         = "portfolio"
   comment      = "Schema containing Risk & PnL trades and metrics"
 }
+*/

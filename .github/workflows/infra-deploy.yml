@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - "terraform/**"
+      - "terraform/core/**"
   workflow_dispatch:
 
 permissions:
@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: terraform
+        working-directory: terraform/core
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -55,7 +55,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tfplan
-          path: terraform/tfplan
+          path: terraform/core/tfplan
 
   apply:
     name: "Terraform Apply"
@@ -64,7 +64,7 @@ jobs:
     environment: sandbox
     defaults:
       run:
-        working-directory: terraform
+        working-directory: terraform/core
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -91,7 +91,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: tfplan
-          path: terraform
+          path: terraform/core
 
       - name: Terraform Init
         run: terraform init

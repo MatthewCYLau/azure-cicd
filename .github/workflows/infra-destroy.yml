@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: terraform
+        working-directory: terraform/core
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -50,7 +50,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tfdestroyplan
-          path: terraform/tfdestroyplan
+          path: terraform/core/tfdestroyplan
 
   destroy-apply:
     name: "Terraform Destroy Apply"
@@ -86,7 +86,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: tfdestroyplan
-          path: terraform
+          path: terraform/core
 
       - name: Terraform Init
         run: terraform init
